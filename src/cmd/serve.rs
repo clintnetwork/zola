@@ -403,6 +403,24 @@ pub fn serve(
         }
     };
 
+    let recreate_site = || match create_new_site(
+        interface,
+        port,
+        output_dir,
+        base_url,
+        config_file,
+        include_drafts,
+    ) {
+        Ok((s, _)) => {
+            rebuild_done_handling(&broadcaster, Ok(()), "/x.js");
+            Some(s)
+        }
+        Err(e) => {
+            console::error(&format!("{}", e));
+            None
+        }
+    };
+
     loop {
         match rx.recv() {
             Ok(event) => {
@@ -442,30 +460,16 @@ pub fn serve(
                                 console::info(
                                     "-> Themes changed. The whole site will be reloaded.",
                                 );
-                                site = create_new_site(
-                                    interface,
-                                    port,
-                                    output_dir,
-                                    base_url,
-                                    config_file,
-                                    include_drafts,
-                                )
-                                .unwrap()
-                                .0;
-                                rebuild_done_handling(&broadcaster, Ok(()), "/x.js");
+                                if let Some(s) = recreate_site() {
+                                    site = s;
+                                }
                             }
                             ChangeKind::Config => {
                                 console::info("-> Config changed. The whole site will be reloaded. The browser needs to be refreshed to make the changes visible.");
-                                site = create_new_site(
-                                    interface,
-                                    port,
-                                    output_dir,
-                                    base_url,
-                                    config_file,
-                                    include_drafts,
-                                )
-                                .unwrap()
-                                .0;
+
+                                if let Some(s) = recreate_site() {
+                                    site = s;
+                                }
                             }
                         }
                         console::report_elapsed_time(start);
@@ -503,30 +507,17 @@ pub fn serve(
                                 console::info(
                                     "-> Themes changed. The whole site will be reloaded.",
                                 );
-                                site = create_new_site(
-                                    interface,
-                                    port,
-                                    output_dir,
-                                    base_url,
-                                    config_file,
-                                    include_drafts,
-                                )
-                                .unwrap()
-                                .0;
-                                rebuild_done_handling(&broadcaster, Ok(()), "/x.js");
+
+                                if let Some(s) = recreate_site() {
+                                    site = s;
+                                }
                             }
                             (ChangeKind::Config, _) => {
                                 console::info("-> Config changed. The whole site will be reloaded. The browser needs to be refreshed to make the changes visible.");
-                                site = create_new_site(
-                                    interface,
-                                    port,
-                                    output_dir,
-                                    base_url,
-                                    config_file,
-                                    include_drafts,
-                                )
-                                .unwrap()
-                                .0;
+
+                                if let Some(s) = recreate_site() {
+                                    site = s;
+                                }
                             }
                         };
                         console::report_elapsed_time(start);
